@@ -1,16 +1,20 @@
 {
-  "name": "Chrome Extension Webpack",
+  "name": "Shortlinks",
   "options_page": "options.html",
   "background": {
-    "page": "background.html"
+    "service_worker": "background-wrapper.bundle.js"
   },
-  "browser_action": {
+  "action": {
     "default_popup": "popup.html",
     "default_icon": "icon-34.png"
   },
   "icons": {
     "128": "icon-128.png"
   },
-  "manifest_version": 2,
-  "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'"
+  "manifest_version": 3,
+  "content_security_policy": {
+      "extension_pages": "script-src 'self'; object-src 'self'"
+  },
+  "permissions": ["declarativeNetRequest"],
+  "host_permissions": ["<all_urls>"]
 }
