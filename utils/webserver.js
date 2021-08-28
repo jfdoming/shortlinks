@@ -7,12 +7,25 @@ var WebpackDevServer = require("webpack-dev-server"),
 var options = config.chromeExtensionBoilerplate || {};
 var excludeEntriesToHotReload = options.notHotReload || [];
 
+var wsClientConfig = {
+  webSocketURL: {
+    protocol: "ws",
+    hostname: env.HOSTNAME,
+    port: env.PORT,
+    pathname: "/ws",
+  },
+};
+var wsConfigQuery =
+  "webpack-dev-server/client?" +
+  Object.entries(wsClientConfig.webSocketURL)
+    .map(([k, v]) => k + "=" + v)
+    .join("&");
+
 for (var entryName in config.entry) {
   if (excludeEntriesToHotReload.indexOf(entryName) === -1) {
-    config.entry[entryName] = [
-      "webpack-dev-server/client?http://localhost:" + env.PORT,
-      "webpack/hot/dev-server",
-    ].concat(config.entry[entryName]);
+    config.entry[entryName] = [wsConfigQuery, "webpack/hot/dev-server"].concat(
+      config.entry[entryName]
+    );
   }
 }
 
@@ -30,11 +43,7 @@ var server = new WebpackDevServer(
     static: {
       directory: path.join(__dirname, "../build"),
     },
-    client: {
-      webSocketURL: {
-        port: env.PORT,
-      },
-    },
+    client: wsClientConfig,
     headers: {
       "Access-Control-Allow-Origin": "*",
     },
