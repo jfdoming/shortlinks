@@ -15,7 +15,24 @@ const rpc = (method, data) => {
   );
   return result;
 };
+const genRpc =
+  (name, passData = true) =>
+  (data) =>
+    rpc(name, passData ? data : undefined);
 
-export const getRules = () => {
-  return rpc("getRules");
-};
+// getRules()
+export const getRules = genRpc("getRules", false);
+
+// addRule({ rewrite, match })
+export const addRule = genRpc("addRule");
+
+// replaceRule({ id, rewrite, match })
+export const replaceRule = genRpc("replaceRule");
+
+// deleteRule(id)
+export const deleteRule = genRpc("deleteRule");
+
+window.getRules = getRules;
+window.addRule = addRule;
+window.replaceRule = replaceRule;
+window.deleteRule = deleteRule;
