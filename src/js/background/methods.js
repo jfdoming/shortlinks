@@ -21,7 +21,7 @@ const updateRules = (removeIds, addRules) => {
   });
 };
 
-const AUTO_REGEXP_START = "(^|^.*[^a-zA-Z0-9-])";
+const AUTO_REGEXP_START = "^((?:[^/]+://)?(?:[a-zA-Z0-9-]*.)?)";
 const AUTO_REGEXP_END = "(/.*|$)";
 
 const getRewriteFromRedirect = (redirect, match) => {
