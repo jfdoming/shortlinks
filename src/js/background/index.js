@@ -1,10 +1,10 @@
-importScripts("background-methods.bundle.js");
+import METHODS from "./methods";
 
 const handleRequest = async (request) => {
-  if (request?.for == "background" && self.METHODS?.[request.method]) {
+  if (request?.for == "background" && METHODS?.[request.method]) {
     console.log(`Received request for method ${request.method}, processing...`);
     try {
-      const result = await self.METHODS[request.method](request.data);
+      const result = await METHODS[request.method](request.data);
       const [response, error] = result || [];
 
       return {

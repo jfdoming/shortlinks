@@ -219,9 +219,11 @@ const deleteRule = async (id) => {
   }
 };
 
-self.METHODS = {
+const METHODS = {
   getRules,
   addRule,
   replaceRule,
   deleteRule,
 };
+
+export default METHODS;
