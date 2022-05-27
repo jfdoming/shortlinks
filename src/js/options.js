@@ -76,7 +76,7 @@ const makeRuleEntry =
       td(query),
       td(rewrite),
       td(exact, exactLabel),
-      elWithChildren("td", { colspan: isControlRow ? 2 : 1 })(btn)
+      elWithChildren("td", { colSpan: isControlRow ? 2 : 1 })(btn)
     );
 
     if (!isControlRow) {
