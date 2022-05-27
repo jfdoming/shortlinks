@@ -1,7 +1,7 @@
 {
-  "name": "chrome-extension-webpack",
-  "version": "0.0.1",
-  "description": "A boilerplate to chrome extension with webpack",
+  "name": "shortlinks-extension",
+  "version": "0.2.2",
+  "description": "Lets you assign short, memorable shortcut names to the sites you use most often.",
   "scripts": {
     "build": "node scripts/build.js",
     "start": "node scripts/webserver.js"
