@@ -2,8 +2,20 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title></title>
+  <title>Shortlinks - Options</title>
 </head>
 <body>
+  <table id="rules"></table>
+  <div id="importModal" class="modalShade">
+    <dialog role="dialog" class="modal" aria-labelledby="importTitle">
+      <h2 id="importTitle">Import</h2>
+      <textarea id="importText"></textarea>
+      <div class="modalControls">
+        <button id="importDiscard" class="delete">Discard</button>
+        <span id="importError">Failed to import, please inspect your data and try again.</span>
+        <button id="importConfirm" class="save" disabled="disabled">Confirm</button>
+      </div>
+    </dialog>
+  </div>
 </body>
 </html>
