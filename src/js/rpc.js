@@ -20,16 +20,19 @@ const genRpc =
   (data) =>
     rpc(name, passData ? data : undefined);
 
-// getRules()
+// getRules(): Rule[]
 export const getRules = genRpc("getRules", false);
 
-// addRule({ rewrite, match })
+// addRule({ rewrite, match }): Id
 export const addRule = genRpc("addRule");
 
-// replaceRule({ id, rewrite, match })
+// addRules([{ rewrite, match }]): Id[]
+export const addRules = genRpc("addRules");
+
+// replaceRule({ id, rewrite, match }): void
 export const replaceRule = genRpc("replaceRule");
 
-// deleteRule(id)
+// deleteRule(id): void
 export const deleteRule = genRpc("deleteRule");
 
 window.getRules = getRules;

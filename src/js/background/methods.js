@@ -27,13 +27,15 @@ const AUTO_REGEXP_END = "(/.*|$)";
 const getRewriteFromRedirect = (redirect, match) => {
   if (redirect.regexSubstitution) {
     if (
-      redirect.regexSubstitution.startsWith("\\1") &&
       redirect.regexSubstitution.endsWith("\\2") &&
       match.startsWith(AUTO_REGEXP_START) &&
       match.endsWith(AUTO_REGEXP_END)
     ) {
       try {
-        redirect = makeRedirect(redirect.regexSubstitution.slice(2, -2));
+        const sliceStart = redirect.regexSubstitution.startsWith("\\1") ? 2 : 0;
+        redirect = makeRedirect(
+          redirect.regexSubstitution.slice(sliceStart, -2)
+        );
         return getRewriteFromRedirect(redirect, match);
       } catch {
         // Fall through.
@@ -139,6 +141,14 @@ const makeRule = (id, { rewrite, match }) => {
     rewriteOptions.exact = !!rewrite.exact;
     rewrite = rewrite.target;
   }
+  if (rewrite.endsWith("/")) {
+    // Short hack for now.
+    rewrite = rewrite.substring(0, rewrite.length - 1);
+  }
+  if (rewriteOptions.exact && !rewrite.includes("://")) {
+    rewrite = "http://" + rewrite;
+  }
+
   let matchOptions = {
     regex: false,
   };
@@ -192,18 +202,26 @@ const makeRule = (id, { rewrite, match }) => {
 };
 
 const addRule = async (data) => {
+  const [response, error] = await addRules([data]);
+  if (!response?.length) return [[], null];
+  return [response[0], error];
+};
+
+const addRules = async (dataList) => {
   if (maxId == null) {
     await getRawRules();
   }
 
-  // Incrementing this before the rule is actually added
-  // might result in wasted IDs, but this is better than the alternative
-  // of accidentally reusing the same ID.
-  ++maxId;
-  const id = maxId;
-  const rule = makeRule(id, data);
-  await updateRules([], [rule]);
-  return [id, null];
+  const rules = dataList.map((data) => {
+    // Incrementing this before the rule is actually added
+    // might result in wasted IDs, but this is better than the alternative
+    // of accidentally reusing the same ID.
+    ++maxId;
+    const id = maxId;
+    return makeRule(id, data);
+  });
+  await updateRules([], rules);
+  return [rules.map(({ id }) => id), null];
 };
 
 const replaceRule = async (data) => {
@@ -222,6 +240,7 @@ const deleteRule = async (id) => {
 const METHODS = {
   getRules,
   addRule,
+  addRules,
   replaceRule,
   deleteRule,
 };
