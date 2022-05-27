@@ -58,6 +58,7 @@ var options = {
       {
         test: /\.css$/,
         use: ["style-loader", "css-loader"],
+        sideEffects: true,
         exclude: /node_modules/,
       },
       {
