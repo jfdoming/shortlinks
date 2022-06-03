@@ -1,43 +1,18 @@
 import { addRule, addRules, deleteRule, getRules, replaceRule } from "./rpc";
 import "../css/options.css";
-
-const el = (type, props = {}, attrs = {}) => {
-  const element = document.createElement(type);
-  Object.entries(props).forEach(([key, value]) => {
-    element[key] = value;
-  });
-  Object.entries(attrs).forEach(([key, value]) =>
-    element.setAttribute(key, value)
-  );
-  return element;
-};
-
-const button = (props, attrs) => el("button", props, attrs);
-const input = (props, attrs) => el("input", props, attrs);
-
-const elWithChildren =
-  (type, props, attrs) =>
-  (...els) => {
-    const element = el(type, props, attrs);
-    element.append(...els);
-    return element;
-  };
-
-const tr = elWithChildren("tr");
-const th = elWithChildren("th");
-const td = elWithChildren("td");
+import els from "./elements";
 
 const getRW = (rule) =>
   typeof rule.rewrite === "object" ? rule.rewrite.target : rule.rewrite;
 
 const checkbox = (id, checked) => {
-  const box = input({ type: "checkbox", id, checked });
-  const label = el(
+  const box = els.input({ type: "checkbox", id, checked });
+  const label = els.label(
     "label",
     { htmlFor: id, tabIndex: 0 },
     { "aria-checked": box.checked, role: "checkbox" }
   );
-  label.appendChild(el("div"));
+  label.appendChild(els.div());
 
   label.addEventListener("keyup", (e) => {
     if (e.key === " ") {
@@ -57,30 +32,30 @@ const makeRuleEntry =
   (rule = {}, index = -1) => {
     const isControlRow = !("id" in rule);
 
-    const entry = el("tr", { className: isControlRow ? "control" : "rule" });
+    const entry = els.tr({ className: isControlRow ? "control" : "rule" });
 
-    const btn = button({
+    const btn = els.button({
       textContent: btnName,
       disabled: true,
       className: "save",
     });
-    const query = input({ type: "text", value: rule.match || "" });
-    const rewrite = input({ type: "text", value: getRW(rule) || "" });
+    const query = els.input({ type: "text", value: rule.match || "" });
+    const rewrite = els.input({ type: "text", value: getRW(rule) || "" });
     const [exact, exactLabel] = checkbox(
       "exact-" + (index + 1),
       rule?.rewrite?.exact || false
     );
 
     entry.append(
-      td(el("span", { textContent: rule.id || "<id>" })),
-      td(query),
-      td(rewrite),
-      td(exact, exactLabel),
-      elWithChildren("td", { colSpan: isControlRow ? 2 : 1 })(btn)
+      els.td(els.span(rule.id || "<id>")),
+      els.td(query),
+      els.td(rewrite),
+      els.td(exact, exactLabel),
+      els.td(btn, { colSpan: isControlRow ? 2 : 1 })
     );
 
     if (!isControlRow) {
-      const del = button({
+      const del = els.button({
         textContent: "Delete",
         className: "delete",
         onclick: async () => {
@@ -88,7 +63,7 @@ const makeRuleEntry =
           await refreshRules();
         },
       });
-      entry.appendChild(td(del));
+      entry.appendChild(els.td(del));
     }
 
     const updateButtonDisabledState = () => {
@@ -155,8 +130,10 @@ const refreshRules = async () => {
 
   // Header row.
   rulesElement.appendChild(
-    tr(
-      ...["ID", "Shortcut", "Target", "Exact?", "", ""].map((text) => th(text))
+    els.tr(
+      ...["ID", "Shortcut", "Target", "Exact?", "", ""].map((text) =>
+        els.th(text)
+      )
     )
   );
 
@@ -165,12 +142,12 @@ const refreshRules = async () => {
 
   // Import/export row.
   rulesElement.appendChild(
-    tr(
+    els.tr(
       ...Array(4)
         .fill()
-        .map(() => td()),
-      td(button({ id: "export", className: "save", textContent: "Export" })),
-      td(button({ id: "import", className: "save", textContent: "Import" }))
+        .map(() => els.td()),
+      els.td(els.button("Export", { id: "export", className: "save" })),
+      els.td(els.button("Import", { id: "import", className: "save" }))
     )
   );
 
