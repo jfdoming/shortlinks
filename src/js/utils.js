@@ -25,3 +25,8 @@ export const convertToObjects = (templateKeys, convertToTemplate, ...args) => {
 export const wrapWithObject = (key, mapper) => (value) => ({
   [key]: mapper(value),
 });
+
+export const id =
+  (fn, n = 1) =>
+  (...args) =>
+    fn(...args.slice(0, n));

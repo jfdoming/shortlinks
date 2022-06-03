@@ -1,6 +1,7 @@
 import { addRule, addRules, deleteRule, getRules, replaceRule } from "./rpc";
 import "../css/options.css";
 import els from "./elements";
+import { id } from "./utils";
 
 const getRW = (rule) =>
   typeof rule.rewrite === "object" ? rule.rewrite.target : rule.rewrite;
@@ -8,7 +9,6 @@ const getRW = (rule) =>
 const checkbox = (id, checked) => {
   const box = els.input({ type: "checkbox", id, checked });
   const label = els.label(
-    "label",
     { htmlFor: id, tabIndex: 0 },
     { "aria-checked": box.checked, role: "checkbox" }
   );
@@ -34,8 +34,7 @@ const makeRuleEntry =
 
     const entry = els.tr({ className: isControlRow ? "control" : "rule" });
 
-    const btn = els.button({
-      textContent: btnName,
+    const btn = els.button(btnName, {
       disabled: true,
       className: "save",
     });
@@ -55,8 +54,7 @@ const makeRuleEntry =
     );
 
     if (!isControlRow) {
-      const del = els.button({
-        textContent: "Delete",
+      const del = els.button("Delete", {
         className: "delete",
         onclick: async () => {
           await deleteRule(rule.id);
@@ -130,11 +128,7 @@ const refreshRules = async () => {
 
   // Header row.
   rulesElement.appendChild(
-    els.tr(
-      ...["ID", "Shortcut", "Target", "Exact?", "", ""].map((text) =>
-        els.th(text)
-      )
-    )
+    els.tr(...["ID", "Shortcut", "Target", "Exact?", "", ""].map(id(els.th)))
   );
 
   // Main table rows.
