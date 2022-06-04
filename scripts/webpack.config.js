@@ -22,12 +22,25 @@ if (fileSystem.existsSync(secretsPath)) {
   alias["secrets"] = secretsPath;
 }
 
+const foregroundHR = isDev
+  ? [path.join(basePath, "compat", "foreground-hr.js")]
+  : [];
+const backgroundHR = isDev
+  ? [path.join(basePath, "compat", "background-hr.js")]
+  : [];
+
 var options = {
   mode: env.NODE_ENV,
   entry: {
-    popup: [path.join(basePath, "src", "js", "popup", "index.js")],
-    options: [path.join(basePath, "src", "js", "options.js")],
-    background: [path.join(basePath, "src", "js", "background", "index.js")],
+    popup: [
+      ...foregroundHR,
+      path.join(basePath, "src", "js", "popup", "index.js"),
+    ],
+    options: [...foregroundHR, path.join(basePath, "src", "js", "options.js")],
+    background: [
+      ...backgroundHR,
+      path.join(basePath, "src", "js", "background", "index.js"),
+    ],
     "background-wrapper": path.join(
       basePath,
       "compat",
