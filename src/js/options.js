@@ -14,10 +14,17 @@ const checkbox = (id, checked) => {
   );
   label.appendChild(els.div());
 
+  label.addEventListener("keydown", (e) => {
+    if (e.key === " ") {
+      e.preventDefault();
+    }
+  });
+
   label.addEventListener("keyup", (e) => {
     if (e.key === " ") {
       box.checked = !box.checked;
       box.dispatchEvent(new Event("change", { bubbles: true }));
+      return false;
     }
   });
   box.addEventListener("change", () => {
@@ -160,6 +167,7 @@ const refreshRules = async () => {
   document.getElementById("import").onclick = async () => {
     prevFocusOnModalOpen =
       previouslyFocusedElements[previouslyFocusedElements.length - 1];
+    document.body.classList.add("modalOpen");
     document.getElementById("rules").setAttribute("aria-hidden", "true");
     document.getElementById("importModal").style.display = "flex";
     document.getElementById("importText").focus();
@@ -180,8 +188,11 @@ document.body.onload = async () => {
   const importError = document.getElementById("importError");
   const importDiscard = document.getElementById("importDiscard");
   const importConfirm = document.getElementById("importConfirm");
+  const importModal = document.getElementById("importModal");
 
   const closeModal = () => {
+    window.getSelection().removeAllRanges();
+    document.body.classList.remove("modalOpen");
     document.getElementById("importModal").style.display = "none";
     document.getElementById("rules").setAttribute("aria-hidden", "false");
     importText.value = "";
@@ -216,7 +227,19 @@ document.body.onload = async () => {
   importText.onkeydown = (e) => {
     if (e.ctrlKey || e.altKey | e.metaKey) return;
     if (e.key === "Tab" && e.shiftKey) {
-      importConfirm.focus();
+      (importConfirm.disabled ? importDiscard : importConfirm).focus();
+      e.preventDefault();
+      return false;
+    }
+    if (e.key === "Escape") {
+      importText.blur();
+      e.stopPropagation();
+    }
+  };
+  importDiscard.onkeydown = (e) => {
+    if (e.ctrlKey || e.altKey | e.metaKey) return;
+    if (e.key === "Tab" && !e.shiftKey && importConfirm.disabled) {
+      importText.focus();
       e.preventDefault();
       return false;
     }
@@ -230,8 +253,20 @@ document.body.onload = async () => {
     }
   };
 
-  document.getElementById("importModal").onclick = function (e) {
-    if (e.target !== this) return;
+  let ignoreClickCount = 0;
+  importModal.onmousedown = function (e) {
+    ignoreClickCount += e.target !== this;
+  };
+  importModal.onmouseup = function (e) {
+    if (e.target !== this || ignoreClickCount) {
+      ignoreClickCount = Math.max(ignoreClickCount - 1, 0);
+      return;
+    }
     closeModal();
+  };
+  document.onkeydown = function (e) {
+    if (e.key === "Escape" && document.body.classList.contains("modalOpen")) {
+      closeModal();
+    }
   };
 };
