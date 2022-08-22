@@ -6,34 +6,6 @@ import { id } from "./utils";
 const getRW = (rule) =>
   typeof rule.rewrite === "object" ? rule.rewrite.target : rule.rewrite;
 
-const checkbox = (id, checked) => {
-  const box = els.input({ type: "checkbox", id, checked });
-  const label = els.label(
-    { htmlFor: id, tabIndex: 0 },
-    { "aria-checked": box.checked, role: "checkbox" }
-  );
-  label.appendChild(els.div());
-
-  label.addEventListener("keydown", (e) => {
-    if (e.key === " ") {
-      e.preventDefault();
-    }
-  });
-
-  label.addEventListener("keyup", (e) => {
-    if (e.key === " ") {
-      box.checked = !box.checked;
-      box.dispatchEvent(new Event("change", { bubbles: true }));
-      return false;
-    }
-  });
-  box.addEventListener("change", () => {
-    label.ariaChecked = box.checked;
-  });
-
-  return [box, label];
-};
-
 const makeRuleEntry =
   (btnName, onClick) =>
   (rule = {}, index = -1) => {
@@ -45,9 +17,9 @@ const makeRuleEntry =
       disabled: true,
       className: "save",
     });
-    const query = els.input({ type: "text", value: rule.match || "" });
-    const rewrite = els.input({ type: "text", value: getRW(rule) || "" });
-    const [exact, exactLabel] = checkbox(
+    const query = els.c.text(rule.match || "");
+    const rewrite = els.c.text(getRW(rule) || "");
+    const [exact, exactLabel] = els.c.checkbox(
       "exact-" + (index + 1),
       rule?.rewrite?.exact || false
     );

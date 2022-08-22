@@ -3,7 +3,8 @@ import {
   convertToObjects,
   wrapWithObject,
   convertToArray,
-} from "./utils";
+} from "../utils";
+import compositeElementFactories from "./composite";
 
 const makeEl = (type, settings = {}) => {
   const { hasChildren = true } = settings;
@@ -53,14 +54,17 @@ const elementsToCreate = [
   },
 ];
 
-export default Object.freeze(
-  Object.fromEntries(
-    convertToObjects(
-      ["elements", "settings"],
-      wrapWithObject("elements", convertToArray),
-      elementsToCreate
-    ).flatMap(({ elements, settings }) =>
-      elements.map((el) => [el, makeEl(el, settings)])
-    )
+const els = Object.fromEntries(
+  convertToObjects(
+    ["elements", "settings"],
+    wrapWithObject("elements", convertToArray),
+    elementsToCreate
+  ).flatMap(({ elements, settings }) =>
+    elements.map((el) => [el, makeEl(el, settings)])
   )
 );
+
+export default Object.freeze({
+  ...els,
+  c: compositeElementFactories(els),
+});
