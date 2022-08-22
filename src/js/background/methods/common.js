@@ -1,19 +1,15 @@
 import {
-  AUTO_REGEXP_END,
-  AUTO_REGEXP_START,
-  getFilter,
-  isRegexMatch,
-} from "./matchUtils";
-import {
   addMigrationInfo,
   removeMigrationInfo,
   migrate,
   shouldMigrate,
-} from "./migrations";
+} from "../migrations";
+import IDGenerator from "../ids";
+import { AUTO_REGEXP_START, AUTO_REGEXP_END } from "./getRules/utils";
 
-let maxId = null;
+export let ids = null;
 
-const updateRules = ({
+export const updateRules = ({
   removeIds = [],
   addRules = [],
   rawRemoveIds = [],
@@ -45,7 +41,7 @@ const initRawRules = async (rawRules = null) => {
       workingMaxId = id;
     }
   });
-  maxId = workingMaxId;
+  ids = new IDGenerator(workingMaxId);
 
   await updateRules({
     rawAddRules: migratedRules,
@@ -61,78 +57,23 @@ const initRawRules = async (rawRules = null) => {
     );
 };
 
-const getRawRules = async () => {
+const maybeInitRawRules = async () => {
+  if (ids == null) {
+    await initRawRules();
+  }
+};
+export { maybeInitRawRules as initRawRules };
+
+export const getRawRules = async () => {
   const rawRules = await chrome.declarativeNetRequest.getDynamicRules();
-  if (maxId == null) {
+  if (ids == null) {
     await initRawRules(rawRules);
     return getRawRules();
   }
   return removeMigrationInfo(rawRules);
 };
 
-const getRewriteFromRedirect = (redirect, match) => {
-  if (redirect.regexSubstitution) {
-    if (isRegexMatch(redirect, match)) {
-      try {
-        const sliceStart = redirect.regexSubstitution.startsWith("\\1") ? 2 : 0;
-        redirect = makeRedirect(
-          redirect.regexSubstitution.slice(sliceStart, -2)
-        );
-        return getRewriteFromRedirect(redirect, match);
-      } catch {
-        // Fall through.
-      }
-    }
-    return redirect.regexSubstitution;
-  }
-  if (redirect.url) {
-    return { target: redirect.url, exact: true };
-  }
-  const { transform } = redirect;
-  const {
-    fragment = "",
-    host = "",
-    password = "",
-    path = "",
-    port = "",
-    query = "",
-    scheme = "",
-    username = "",
-  } = transform;
-  const credentials = username + (password ? ":" + password : "");
-  const credentialsFmt = credentials ? credentials + "@" : "";
-  const protocol = scheme ? scheme + "://" : "";
-  const portFmt = port ? ":" + port : "";
-  return protocol + credentialsFmt + host + portFmt + path + query + fragment;
-};
-
-const getMatchFromFilter = (filter, wasRegex) => {
-  if (wasRegex) {
-    if (
-      filter.startsWith(AUTO_REGEXP_START) &&
-      filter.endsWith(AUTO_REGEXP_END)
-    ) {
-      return filter.slice(AUTO_REGEXP_START.length, -AUTO_REGEXP_END.length);
-    }
-    return { query: filter, regex: true };
-  }
-  return filter;
-};
-
-const getRules = async () => {
-  const rawRules = await getRawRules();
-  const mappedRules = rawRules.map(
-    ({ action: { redirect }, condition, id }) => {
-      const filter = getFilter(condition);
-      const rewrite = getRewriteFromRedirect(redirect, filter);
-      const match = getMatchFromFilter(filter, !!condition.regexFilter);
-      return { id, rewrite, match };
-    }
-  );
-  return [mappedRules, null];
-};
-
-const makeRedirect = (urlString) => {
+export const makeRedirect = (urlString) => {
   let usingHost = true;
   if (urlString.startsWith("/")) {
     urlString = "somehost" + urlString;
@@ -172,7 +113,7 @@ const escapeForRegExp = (string) => {
   return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 };
 
-const makeRule = (id, { rewrite, match }) => {
+export const makeRule = (id, { rewrite, match }) => {
   let rewriteOptions = {
     exact: false,
   };
@@ -242,60 +183,3 @@ const makeRule = (id, { rewrite, match }) => {
     condition: { ...condition, resourceTypes: ["main_frame"] },
   };
 };
-
-const addRule = async (data) => {
-  const [response, error] = await addRules([data]);
-  if (!response?.length) return [[], null];
-  return [response[0], error];
-};
-
-const addRules = async (dataList) => {
-  if (maxId == null) {
-    await initRawRules();
-  }
-
-  const resultIds = [];
-  const rules = dataList.map((data) => {
-    // Incrementing this before the rule is actually added
-    // might result in wasted IDs, but this is better than the alternative
-    // of accidentally reusing the same ID.
-    ++maxId;
-    const id = maxId;
-    resultIds.push(id);
-
-    return makeRule(id, data);
-  });
-  await updateRules({ addRules: rules });
-  return [resultIds, null];
-};
-
-const replaceRule = async (data) => {
-  if (maxId == null) {
-    await initRawRules();
-  }
-
-  const { id } = data;
-  const rule = makeRule(id, data);
-  await updateRules({ removeIds: [id], addRules: [rule] });
-};
-
-const deleteRule = async (id) => {
-  if (maxId == null) {
-    await initRawRules();
-  }
-
-  await updateRules({ removeIds: [id] });
-  if (id == maxId) {
-    --maxId;
-  }
-};
-
-const METHODS = {
-  getRules,
-  addRule,
-  addRules,
-  replaceRule,
-  deleteRule,
-};
-
-export default METHODS;

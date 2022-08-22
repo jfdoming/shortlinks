@@ -1,4 +1,4 @@
-import { getFilter, isRegexMatch } from "../../matchUtils";
+import { getFilter, isRegexMatch } from "../../methods/getRules/utils";
 
 export default (from, to) => (rule) => {
   const {
