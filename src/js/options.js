@@ -170,6 +170,7 @@ const refreshRules = async () => {
     document.body.classList.add("modalOpen");
     document.getElementById("rules").setAttribute("aria-hidden", "true");
     document.getElementById("importModal").style.display = "flex";
+    document.getElementById("importModal").setAttribute("aria-modal", "true");
     document.getElementById("importText").focus();
   };
 };
@@ -193,7 +194,8 @@ document.body.onload = async () => {
   const closeModal = () => {
     window.getSelection().removeAllRanges();
     document.body.classList.remove("modalOpen");
-    document.getElementById("importModal").style.display = "none";
+    importModal.style.display = "none";
+    importModal.setAttribute("aria-modal", "false");
     document.getElementById("rules").setAttribute("aria-hidden", "false");
     importText.value = "";
     importError.setAttribute("role", undefined);
@@ -217,6 +219,7 @@ document.body.onload = async () => {
     } catch (e) {
       importError.setAttribute("role", "alert");
       importError.style.display = "inline-block";
+      throw e;
     }
   };
 
