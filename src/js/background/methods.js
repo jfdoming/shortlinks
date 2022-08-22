@@ -1,36 +1,78 @@
+import {
+  AUTO_REGEXP_END,
+  AUTO_REGEXP_START,
+  getFilter,
+  isRegexMatch,
+} from "./matchUtils";
+import {
+  addMigrationInfo,
+  removeMigrationInfo,
+  migrate,
+  shouldMigrate,
+} from "./migrations";
+
 let maxId = null;
+
+const updateRules = ({
+  removeIds = [],
+  addRules = [],
+  rawRemoveIds = [],
+  rawAddRules = [],
+}) => {
+  return chrome.declarativeNetRequest.updateDynamicRules({
+    removeRuleIds: [...addMigrationInfo(removeIds), ...rawRemoveIds],
+    addRules: [...addMigrationInfo(addRules), ...rawAddRules],
+  });
+};
+
+const initRawRules = async (rawRules = null) => {
+  rawRules = rawRules || (await chrome.declarativeNetRequest.getDynamicRules());
+
+  let migratedRuleIds = [];
+  let migratedRules = [];
+  let workingMaxId = 0;
+
+  rawRules.forEach((rule) => {
+    if (shouldMigrate(rule)) {
+      migratedRuleIds.push(rule.id);
+
+      rule = migrate(rule);
+      migratedRules.push(rule);
+    }
+
+    const id = removeMigrationInfo(rule.id);
+    if (id > workingMaxId) {
+      workingMaxId = id;
+    }
+  });
+  maxId = workingMaxId;
+
+  await updateRules({
+    rawAddRules: migratedRules,
+    rawRemoveIds: migratedRuleIds,
+  });
+
+  const nMigrated = migratedRules.length;
+  nMigrated &&
+    console.log(
+      `Migration complete, ${nMigrated} rule${
+        nMigrated === 1 ? "" : "s"
+      } updated.`
+    );
+};
 
 const getRawRules = async () => {
   const rawRules = await chrome.declarativeNetRequest.getDynamicRules();
   if (maxId == null) {
-    let workingMaxId = 0;
-    rawRules.forEach(({ id }) => {
-      if (id > workingMaxId) {
-        workingMaxId = id;
-      }
-    });
-    maxId = workingMaxId;
+    await initRawRules(rawRules);
+    return getRawRules();
   }
-  return rawRules;
+  return removeMigrationInfo(rawRules);
 };
-
-const updateRules = (removeIds, addRules) => {
-  return chrome.declarativeNetRequest.updateDynamicRules({
-    removeRuleIds: removeIds,
-    addRules,
-  });
-};
-
-const AUTO_REGEXP_START = "^((?:[^/]+://)?(?:[a-zA-Z0-9-]*.)?)";
-const AUTO_REGEXP_END = "(/.*|$)";
 
 const getRewriteFromRedirect = (redirect, match) => {
   if (redirect.regexSubstitution) {
-    if (
-      redirect.regexSubstitution.endsWith("\\2") &&
-      match.startsWith(AUTO_REGEXP_START) &&
-      match.endsWith(AUTO_REGEXP_END)
-    ) {
+    if (isRegexMatch(redirect, match)) {
       try {
         const sliceStart = redirect.regexSubstitution.startsWith("\\1") ? 2 : 0;
         redirect = makeRedirect(
@@ -80,10 +122,10 @@ const getMatchFromFilter = (filter, wasRegex) => {
 const getRules = async () => {
   const rawRules = await getRawRules();
   const mappedRules = rawRules.map(
-    ({ action: { redirect }, condition: { regexFilter, urlFilter }, id }) => {
-      const filter = regexFilter || urlFilter.slice(2, -1);
+    ({ action: { redirect }, condition, id }) => {
+      const filter = getFilter(condition);
       const rewrite = getRewriteFromRedirect(redirect, filter);
-      const match = getMatchFromFilter(filter, !!regexFilter);
+      const match = getMatchFromFilter(filter, !!condition.regexFilter);
       return { id, rewrite, match };
     }
   );
@@ -185,9 +227,9 @@ const makeRule = (id, { rewrite, match }) => {
         match = AUTO_REGEXP_START + escapeForRegExp(match) + AUTO_REGEXP_END;
         rewrite = (redirect.transform.scheme ? "" : "\\1") + rewrite + "\\2";
       }
+    // eslint-disable-next-line no-fallthrough
     case true:
-      const regexFilter = match;
-      condition = { regexFilter };
+      condition = { regexFilter: match };
       redirect = { regexSubstitution: rewrite };
       break;
     default:
@@ -209,29 +251,40 @@ const addRule = async (data) => {
 
 const addRules = async (dataList) => {
   if (maxId == null) {
-    await getRawRules();
+    await initRawRules();
   }
 
+  const resultIds = [];
   const rules = dataList.map((data) => {
     // Incrementing this before the rule is actually added
     // might result in wasted IDs, but this is better than the alternative
     // of accidentally reusing the same ID.
     ++maxId;
     const id = maxId;
+    resultIds.push(id);
+
     return makeRule(id, data);
   });
-  await updateRules([], rules);
-  return [rules.map(({ id }) => id), null];
+  await updateRules({ addRules: rules });
+  return [resultIds, null];
 };
 
 const replaceRule = async (data) => {
+  if (maxId == null) {
+    await initRawRules();
+  }
+
   const { id } = data;
   const rule = makeRule(id, data);
-  await updateRules([id], [rule]);
+  await updateRules({ removeIds: [id], addRules: [rule] });
 };
 
 const deleteRule = async (id) => {
-  await updateRules([id], []);
+  if (maxId == null) {
+    await initRawRules();
+  }
+
+  await updateRules({ removeIds: [id] });
   if (id == maxId) {
     --maxId;
   }
