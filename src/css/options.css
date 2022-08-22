@@ -87,12 +87,13 @@ span {
 }
 
 label {
-    border: 1px solid #ccc;
+    border: 1px solid #bbb;
     padding: 10px 2px;
     font-size: 0;
     position: relative;
     left: calc(50% - 10px);
     bottom: 5px;
+    cursor: pointer;
 }
 
 label > div {
@@ -108,9 +109,13 @@ input:checked + label > div {
     background: #635aff;
 }
 
+input:not(:checked) + label:hover > div {
+    background: rgb(242, 235, 255);
+}
+
 
 .modalShade {
-    position: absolute;
+    position: fixed;
     top: 0;
     left: 0;
     width: 100%;
