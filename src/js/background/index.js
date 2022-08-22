@@ -23,7 +23,7 @@ const handleRequest = async (request) => {
   return { code: 404, message: "Not Found", data: null };
 };
 
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
   handleRequest(request).then(sendResponse);
   return true;
 });

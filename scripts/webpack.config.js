@@ -1,28 +1,22 @@
 var webpack = require("webpack"),
   path = require("path"),
   fileSystem = require("fs"),
-  env = require("./scripts/env"),
   CleanWebpackPlugin = require("clean-webpack-plugin").CleanWebpackPlugin,
   CopyWebpackPlugin = require("copy-webpack-plugin"),
   HtmlWebpackPlugin = require("html-webpack-plugin");
 
+const { env } = process;
+env.NODE_ENV = env.NODE_ENV || "development";
+
+const isDev = env.NODE_ENV === "development";
+const basePath = path.join(__dirname, "..");
+
 // load the secrets
 var alias = {};
 
-var secretsPath = path.join(__dirname, "secrets." + env.NODE_ENV + ".js");
+var secretsPath = path.join(basePath, "secrets." + env.NODE_ENV + ".js");
 
-var fileExtensions = [
-  "jpg",
-  "jpeg",
-  "png",
-  "gif",
-  "eot",
-  "otf",
-  "svg",
-  "ttf",
-  "woff",
-  "woff2",
-];
+var resourceFileExtensions = ["png"];
 
 if (fileSystem.existsSync(secretsPath)) {
   alias["secrets"] = secretsPath;
@@ -31,26 +25,17 @@ if (fileSystem.existsSync(secretsPath)) {
 var options = {
   mode: env.NODE_ENV,
   entry: {
-    popup: path.join(__dirname, "src", "js", "popup.js"),
-    options: path.join(__dirname, "src", "js", "options.js"),
-    background: path.join(__dirname, "src", "js", "background", "index.js"),
+    popup: [path.join(basePath, "src", "js", "popup", "index.js")],
+    options: [path.join(basePath, "src", "js", "options.js")],
+    background: [path.join(basePath, "src", "js", "background", "index.js")],
     "background-wrapper": path.join(
-      __dirname,
-      "src",
-      "js",
-      "background",
-      "wrapper.js"
-    ),
-    "background-methods": path.join(
-      __dirname,
-      "src",
-      "js",
-      "background",
-      "methods.js"
+      basePath,
+      "compat",
+      "background-wrapper.js"
     ),
   },
   output: {
-    path: path.join(__dirname, "build"),
+    path: path.join(basePath, isDev ? "build" : "dist"),
     filename: "[name].bundle.js",
   },
   module: {
@@ -62,7 +47,7 @@ var options = {
         exclude: /node_modules/,
       },
       {
-        test: new RegExp(".(" + fileExtensions.join("|") + ")$"),
+        test: new RegExp(".(" + resourceFileExtensions.join("|") + ")$"),
         loader: "file-loader",
         options: {
           name: "[name].[ext]",
@@ -90,26 +75,30 @@ var options = {
       patterns: [
         {
           from: "src/manifest.json",
-          transform: function (content, path) {
-            // generates the manifest file using the package.json informations
+          transform: function (content) {
+            // generates the manifest file using the package.json information
             return Buffer.from(
-              JSON.stringify({
-                description: process.env.npm_package_description,
-                version: process.env.npm_package_version,
-                ...JSON.parse(content.toString()),
-              })
+              JSON.stringify(
+                {
+                  description: process.env.npm_package_description,
+                  version: process.env.npm_package_version,
+                  ...JSON.parse(content.toString()),
+                },
+                null,
+                isDev ? 2 : null
+              )
             );
           },
         },
       ],
     }),
     new HtmlWebpackPlugin({
-      template: path.join(__dirname, "src", "popup.html"),
+      template: path.join(basePath, "src", "popup.html"),
       filename: "popup.html",
       chunks: ["popup"],
     }),
     new HtmlWebpackPlugin({
-      template: path.join(__dirname, "src", "options.html"),
+      template: path.join(basePath, "src", "options.html"),
       filename: "options.html",
       chunks: ["options"],
     }),

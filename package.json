@@ -5,7 +5,7 @@
   "repository": "jfdoming/shortlinks",
   "license": "MIT",
   "scripts": {
-    "build": "node scripts/build.js",
+    "build": "node scripts/dist.js",
     "start": "node scripts/webserver.js"
   },
   "devDependencies": {
