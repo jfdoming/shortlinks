@@ -6,6 +6,7 @@
   "license": "MIT",
   "scripts": {
     "build": "node scripts/dist.js",
+    "dist": "node scripts/dist.js",
     "start": "node scripts/webserver.js"
   },
   "devDependencies": {
