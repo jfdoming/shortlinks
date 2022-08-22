@@ -13,6 +13,8 @@ const handleRequest = async (request) => {
         data: error || response,
       };
     } catch (e) {
+      console.error(e);
+      console.log(e.stack);
       return {
         code: 500,
         message: "Internal Server Error",
