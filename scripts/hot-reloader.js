@@ -4,12 +4,12 @@ const chokidar = require("chokidar"),
   path = require("path");
 
 const createState = () => {
-  let ws = { current: null };
+  let state = { ws: null, optionsOpen: true };
   let shouldReload = false;
   const doSend = debounce(() => {
-    if (ws.current != null) {
+    if (state.ws != null) {
       console.log(`file change detected, reloading...`);
-      ws.current.send("file-change");
+      state.ws.send("file-change");
       shouldReload = false;
     } else {
       shouldReload = true;
@@ -20,9 +20,11 @@ const createState = () => {
     (catchUp = false) => {
       if (!catchUp || shouldReload) {
         doSend();
+      } else if (catchUp && state.optionsOpen) {
+        state.ws.send("open-options");
       }
     },
-    ws,
+    state,
   ];
 };
 
@@ -30,7 +32,7 @@ module.exports = ({ port, directory, exclude = [] }) => {
   const directoryPath = path.resolve(directory);
   const excludePaths = exclude.map((file) => path.join(directoryPath, file));
 
-  const [send, ws] = createState();
+  const [send, state] = createState();
 
   const watcher = chokidar.watch(directoryPath, {
     ignoreInitial: true,
@@ -52,18 +54,21 @@ module.exports = ({ port, directory, exclude = [] }) => {
   });
 
   wss.on("connection", (paramWs) => {
-    ws.current = paramWs;
+    const firstWs = state.ws == null;
+    console.log(firstWs);
 
-    ws.current.on("close", (code) => {
-      ws.current = null;
+    state.ws = paramWs;
+
+    state.ws.on("close", (code) => {
+      state.ws = null;
       console.log(
         `extension connection terminated${code == 1001 ? " (lost focus)" : ""}.`
       );
     });
-    ws.current.onerror = console.error;
+    state.ws.onerror = console.error;
 
     console.log("extension connection established.");
 
-    send(true);
+    if (firstWs) send(true);
   });
 };
